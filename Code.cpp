@@ -8,6 +8,28 @@ using namespace std;
 // mpicxx -o blah file.cpp
 // mpirun -q -np 32 blah
 
+class Node {
+	Node * parent;
+	int value[6];
+	Node * child[6];
+	public:
+	Node(int val); // constructor
+	bool numChildren();
+	void absorb(Node * newChild);
+	void discard(Node * removeChild);
+}
+
+class Tree {
+	Node * root;
+	void print(Node * start);
+	public:
+	Tree(); // constructor
+	Node * search(int valToFind);
+	bool insert(int valToAdd);
+	bool delete(int valToKill);
+	void print();
+}
+
 int main (int argc, char * argv[]) {
 
 	int my_rank;			// my CPU number for this process
