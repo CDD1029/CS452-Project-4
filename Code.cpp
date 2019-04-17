@@ -14,7 +14,7 @@ class Node {
 	Node * child[6];
 	public:
 	Node(int val); // constructor
-	bool numChildren();
+	int numChildren();
 	void absorb(Node * newChild);
 	void discard(Node * removeChild);
 }
@@ -22,12 +22,25 @@ class Node {
 class Tree {
 	Node * root;
 	void print(Node * start);
+	void print (Node * start){
+		for(int i=0; i<start.numChildren(); i++){
+			cout << start.value[i] << " ";
+		}
+		cout << endl;
+		for (int i=0; i<start.numChildren(); i++){
+			cout << "    ";
+			print(start.child[i]);
+		}
+	}
 	public:
 	Tree(); // constructor
 	Node * search(int valToFind);
 	bool insert(int valToAdd);
 	bool delete(int valToKill);
 	void print();
+	void print(){
+		print(root);
+	}
 }
 
 int main (int argc, char * argv[]) {
