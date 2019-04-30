@@ -1,72 +1,145 @@
 #include <iostream>
 #include <stdio.h>
 #include <string.h>
-#include "mpi.h" // message passing interface
+
 using namespace std;
 
-// New compile and run commands for MPI!
-// mpicxx -o blah file.cpp
-// mpirun -q -np 32 blah
 
 class Node {
-	Node * parent;
-	int value[6];
-	Node * child[6];
-	public:
-	Node(int val); // constructor
-	int numChildren();
-	void absorb(Node * newChild);
-	void discard(Node * removeChild);
-}
+public:
+
+    Node * parent;
+    int value[6];
+    int numchildren;
+    Node * child[6];
+    Node(int val){
+        value[0]=val;
+        parent=NULL;
+        numchildren=0;
+        for(int i = 0; i < 6; i++){
+            child[i] = NULL;
+        }
+    }
+    int numChildren(){return numchildren;}
+    void absorb(Node * newChild){
+        this->putAChildInIt(newChild);
+        if(this->numChildren() > 3){
+            Node * left = new Node(this->child[1]->value[1]);
+            //ok so what's happening here is that a left node is being made, put the left 2 most elements in there, then shift over the two from current code. this is keeping in mind the value of the parent is the greater of the two nodes.
+            left->child[0] = this->child[0];
+            left->child[1] = this->child[1];
+            left->numchildren = 2;
+            this->child[0] = this->child[2];
+            this->child[1] = this->child[3];
+            this->child[2] = NULL;
+            this->child[3] = NULL;
+            this->numchildren = 2;
+            left->parent = this->parent;
+            this->parent = left;
+            newChild->parent = left;
+            this->parent->absorb(left);
+
+        }
+
+    }
+    void putAChildInIt(Node * newNode){
+        this->child[this->numChildren()] = newNode;
+        this->numchildren++;
+        this->reorderChildren();
+    }
+    void swapChildren(Node * first, Node * last) {
+        Node * temp = first;
+        first = last;
+        last = temp;
+    }
+    void reorderChildren(){
+        for(int x = 0; x < this->numChildren(); x++) {
+            Node * max = this->child[0];
+            int lastIndexOfInsertionSort = this->numChildren() - x;
+            int maxIndex = 0;
+            for(int i = 1; i < lastIndexOfInsertionSort; i++) {
+                if(this->child[i]->value > max->value) {
+                    max = this->child[i];
+                    maxIndex = i;
+                }
+            }
+            swapChildren(this->child[lastIndexOfInsertionSort-1],this->child[maxIndex]);
+
+        }
+        //do i have to update parent value here??? i dont think i do...
+    }
+    //  void discard(Node * removeChild);
+};
 
 class Tree {
-	Node * root;
-	void print(Node * start);
-	void print (Node * start){
-		for(int i=0; i<start.numChildren(); i++){
-			cout << start.value[i] << " ";
-		}
-		cout << endl;
-		for (int i=0; i<start.numChildren(); i++){
-			cout << "    ";
-			print(start.child[i]);
-		}
-	}
-	public:
-	Tree(); // constructor
-	Node * search(int valToFind);
-	bool insert(int valToAdd);
-	bool delete(int valToKill);
-	void print();
-	void print(){
-		print(root);
-	}
-}
+    Node * root;
+    void print (Node * start){
+        for(int i=0; i<start->numChildren(); i++){
+            cout << start->value[i] << " ";
+        }
+        cout << endl;
+        for (int i=0; i<start->numChildren(); i++){
+            cout << "    ";
+            cout << start->child[i]->value[i] << endl;
+        }
+    }
+    //if doesnt search returns null, make new node, putChildIn root
+public:
+    Tree(){
+        //root = NULL;
+        root= new Node(2000);//idk how to deal with null root yet.
+    }
+    Node * search(int valToFind){
+        return searchHelper(root, valToFind);
+    }
+    Node * searchHelper(Node *n, int valToFind){
+        if (n->numChildren()==0){
+            return n;
+        }
+        for(int i=0;i<n->numChildren();i++){
+            if (valToFind<=n->value[i])
+                return searchHelper(n->child[i],valToFind);
+        }
+        return n;// return 2000;
+    }
+    void insert(int valToAdd){
+        Node * b=search(valToAdd);
+        if (b->value[0]==valToAdd)
+            return;
+        Node * newNode = new Node(valToAdd);
+        if(b->numChildren() < 2){
+            b->putAChildInIt(newNode);
+            return;
+        }
+        b->absorb(newNode);
+
+    }
+    void discard(int valToKill){
+        Node * b=search(valToKill);
+        if (b->value[0]!=valToKill)
+            return;
+        //  b->parent->discard(b);
+    }
+    void print(){
+        cout << root->numChildren() << endl;
+    }
+};
 
 int main (int argc, char * argv[]) {
 
-	int my_rank;			// my CPU number for this process
-	int p;					// number of CPUs that we have
-	int source;				// rank of the sender
-	int dest;				// rank of destination
-	int tag = 0;			// message number
-	char message[100];		// message itself
-	MPI_Status status;		// return status for receive
-	
-	// Start MPI
-	MPI_Init(&argc, &argv);
-	
-	// Find out my rank!
-	MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
-	
-	// Find out the number of processes!
-	MPI_Comm_size(MPI_COMM_WORLD, &p);
-	
-	// THE REAL PROGRAM IS HERE
-    cout << my_rank << endl;
 
-	// Shut down MPI
-	MPI_Finalize();
+    // THE REAL PROGRAM IS HERE
 
-	return 0;
+    // Shut down MPI
+
+    Tree *t = new Tree();
+    //t->insert(25);
+    t->insert(50);
+    t->insert(100);
+    t->insert(75);
+    t->insert(80);
+
+    t->print();
+
+    return 0;
 }
